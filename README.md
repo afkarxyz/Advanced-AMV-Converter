@@ -7,3 +7,7 @@
 ![image](https://github.com/user-attachments/assets/94e097b3-a003-4ffd-8d04-90ec3586df0f)
 
 ![image](https://github.com/user-attachments/assets/b59f7acc-86cb-419d-8983-e88f327e4517)
+
+## Acknowledgments
+
+This project was inspired by the original [AMV Converter](https://sourceforge.net/projects/amv-converter/) from SourceForge, reimagined with a modern interface and enhanced features.
