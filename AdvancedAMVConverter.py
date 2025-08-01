@@ -393,10 +393,8 @@ class AdvancedAMVConverter(QMainWindow):
         self.input_files = []
         
         self.fps_block_mapping = {
-            10: 2205, 11: 2005, 12: 1838, 13: 1696, 14: 1575, 15: 1470,
-            16: 1378, 17: 1297, 18: 1225, 19: 1161, 20: 1103, 21: 1050,
-            22: 1002, 23: 959, 24: 919, 25: 882, 26: 848, 27: 817,
-            28: 788, 29: 760, 30: 735
+            10: 2205, 14: 1575, 15: 1470, 18: 1225, 
+            21: 1050, 25: 882, 30: 735
         }
         
         self.init_ui()
@@ -483,10 +481,11 @@ class AdvancedAMVConverter(QMainWindow):
         self.resolution_group = QButtonGroup()
         self.resolution_radios = {}
         
-        resolutions = ["240p", "180p", "176p", "160p", "144p", "128p", "120p", "96p"]
+        resolutions = ["240p", "176p", "160p", "144p", "128p", "96p"]
         for i, res in enumerate(resolutions):
             radio = QRadioButton(res)
             radio.setCursor(Qt.CursorShape.PointingHandCursor)
+            radio.toggled.connect(self.on_resolution_changed)
             self.resolution_radios[res] = radio
             self.resolution_group.addButton(radio, i)
             
@@ -531,7 +530,8 @@ class AdvancedAMVConverter(QMainWindow):
         self.fps_combo = QComboBox()
         self.fps_combo.setMaximumWidth(80)
         self.fps_combo.setCursor(Qt.CursorShape.PointingHandCursor)
-        fps_values = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+        
+        fps_values = [10, 14, 15, 18, 21, 25, 30]
         for fps in fps_values:
             self.fps_combo.addItem(str(fps))
         
@@ -541,6 +541,19 @@ class AdvancedAMVConverter(QMainWindow):
         layout.addStretch()
         
         self.tab_widget.addTab(tab, "Settings")
+        
+    def on_resolution_changed(self):
+        if not hasattr(self, 'crop_radio'):
+            return
+            
+        is_128p_selected = self.resolution_radios["128p"].isChecked()
+        
+        if is_128p_selected:
+            self.crop_radio.setVisible(False)
+            if self.crop_radio.isChecked():
+                self.preserved_radio.setChecked(True)
+        else:
+            self.crop_radio.setVisible(True)
         
     def create_progress_tab(self):
         tab = QWidget()
@@ -598,7 +611,7 @@ class AdvancedAMVConverter(QMainWindow):
         
         about_text = QLabel("""
 <h3>Advanced AMV Converter</h3>
-<p><b>Version:</b> 1.1</p>
+<p><b>Version:</b> 1.2</p>
 
 <p><b>Supported Input Formats:</b><br>
 MP4, AVI, MOV, MKV, WMV, FLV, WEBM, M4V, MPG, MPEG, M2V, M2TS, MTS, TS, VOB, 3GP, 3G2, F4V, ASF, RMVB, RM, OGV, MXF, DV, DIVX, XVID, MPV, M2P, MP2, MPEG2, OGM</p>
@@ -758,15 +771,15 @@ MP4, AVI, MOV, MKV, WMV, FLV, WEBM, M4V, MPG, MPEG, M2V, M2TS, MTS, TS, VOB, 3GP
             return f"scale=-2:{height}"
         elif scale_type == "Forced":
             width_mapping = {
-                "240": "320", "180": "240", "176": "208", "160": "208", 
-                "144": "176", "128": "176", "120": "160", "96": "128"
+                "240": "320", "176": "208", "160": "208", 
+                "144": "176", "128": "176", "96": "128"
             }
             width = width_mapping.get(height, "320")
             return f"scale={width}:{height}"
         elif scale_type == "Crop":
             width_mapping = {
-                "240": "320", "180": "240", "176": "208", "160": "208", 
-                "144": "176", "128": "176", "120": "160", "96": "128"
+                "240": "320", "176": "208", "160": "208", 
+                "144": "176", "128": "176", "96": "128"
             }
             width = width_mapping.get(height, "320")
             return f"scale=-2:{height},crop={width}:{height}"
