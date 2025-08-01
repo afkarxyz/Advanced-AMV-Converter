@@ -36,7 +36,6 @@ def get_ffmpeg_path():
 FFMPEG_PATH, FFPROBE_PATH = get_ffmpeg_path()
 
 def run_subprocess(cmd, **kwargs):
-    """Helper function to run subprocess with proper Windows flags"""
     default_kwargs = {
         'creationflags': subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
     }
@@ -44,7 +43,6 @@ def run_subprocess(cmd, **kwargs):
     return subprocess.Popen(cmd, **default_kwargs)
 
 def run_subprocess_simple(cmd, **kwargs):
-    """Helper function to run subprocess.run with proper Windows flags"""
     default_kwargs = {
         'creationflags': subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
     }
@@ -55,7 +53,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QProgressBar, QTextEdit, QFileDialog, QListWidget,
                             QTabWidget, QRadioButton, QButtonGroup, QMessageBox, QGridLayout, QMenu)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QIcon, QPixmap, QAction, QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QIcon, QPixmap, QAction, QDragEnterEvent, QDropEvent, QPainter
 
 class BlackBarWorker(QThread):
     progress_updated = pyqtSignal(int)
@@ -170,7 +168,10 @@ class DragDropListWidget(QListWidget):
         
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
-            video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'}
+            video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm', '.m4v', 
+                               '.mpg', '.mpeg', '.m2v', '.m2ts', '.mts', '.ts', '.vob', '.3gp',
+                               '.3g2', '.f4v', '.asf', '.rmvb', '.rm', '.ogv', '.mxf', '.dv',
+                               '.divx', '.xvid', '.mpv', '.m2p', '.mp2', '.mpeg2', '.ogm'}
             has_video = False
             for url in event.mimeData().urls():
                 if url.isLocalFile():
@@ -200,7 +201,10 @@ class DragDropListWidget(QListWidget):
         
     def dragMoveEvent(self, event):
         if event.mimeData().hasUrls():
-            video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'}
+            video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm', '.m4v', 
+                               '.mpg', '.mpeg', '.m2v', '.m2ts', '.mts', '.ts', '.vob', '.3gp',
+                               '.3g2', '.f4v', '.asf', '.rmvb', '.rm', '.ogv', '.mxf', '.dv',
+                               '.divx', '.xvid', '.mpv', '.m2p', '.mp2', '.mpeg2', '.ogm'}
             has_video = False
             for url in event.mimeData().urls():
                 if url.isLocalFile():
@@ -224,7 +228,10 @@ class DragDropListWidget(QListWidget):
         self.setStyleSheet(self.original_style)
         
         if event.mimeData().hasUrls():
-            video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'}
+            video_extensions = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm', '.m4v', 
+                               '.mpg', '.mpeg', '.m2v', '.m2ts', '.mts', '.ts', '.vob', '.3gp',
+                               '.3g2', '.f4v', '.asf', '.rmvb', '.rm', '.ogv', '.mxf', '.dv',
+                               '.divx', '.xvid', '.mpv', '.m2p', '.mp2', '.mpeg2', '.ogm'}
             video_files = []
             
             for url in event.mimeData().urls():
@@ -240,6 +247,22 @@ class DragDropListWidget(QListWidget):
                 event.ignore()
         else:
             event.ignore()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.count() == 0:
+            painter = QPainter(self.viewport())
+            painter.save()
+            col = self.palette().placeholderText().color()
+            painter.setPen(col)
+            fm = self.fontMetrics()
+            elided_text = fm.elidedText(
+                "📁 Drag & drop video files here or click 'Add Files'", 
+                Qt.TextElideMode.ElideRight, 
+                self.viewport().width()
+            )
+            painter.drawText(self.viewport().rect(), Qt.AlignmentFlag.AlignCenter, elided_text)
+            painter.restore()
 
 class ConversionWorker(QThread):
     progress_updated = pyqtSignal(int)
@@ -575,10 +598,10 @@ class AdvancedAMVConverter(QMainWindow):
         
         about_text = QLabel("""
 <h3>Advanced AMV Converter</h3>
-<p><b>Version:</b> 1.0</p>
+<p><b>Version:</b> 1.1</p>
 
 <p><b>Supported Input Formats:</b><br>
-MP4, AVI, MOV, MKV, FLV, WMV, WEBM</p>
+MP4, AVI, MOV, MKV, WMV, FLV, WEBM, M4V, MPG, MPEG, M2V, M2TS, MTS, TS, VOB, 3GP, 3G2, F4V, ASF, RMVB, RM, OGV, MXF, DV, DIVX, XVID, MPV, M2P, MP2, MPEG2, OGM</p>
 
 <p><b>GitHub:</b><br>
 <a href="https://github.com/afkarxyz/Advanced-AMV-Converter">https://github.com/afkarxyz/Advanced-AMV-Converter</a></p>
@@ -600,21 +623,27 @@ MP4, AVI, MOV, MKV, FLV, WMV, WEBM</p>
         self.move(x, y)
         
     def add_files(self):
+        video_formats = "Video Files ("
+        extensions = [
+            "*.mp4", "*.avi", "*.mov", "*.mkv", "*.wmv", "*.flv", "*.webm", 
+            "*.m4v", "*.mpg", "*.mpeg", "*.m2v", "*.m2ts", "*.mts", "*.ts", 
+            "*.vob", "*.3gp", "*.3g2", "*.f4v", "*.asf", "*.rmvb", "*.rm", 
+            "*.ogv", "*.mxf", "*.dv", "*.divx", "*.xvid", "*.mpv", "*.m2p", 
+            "*.mp2", "*.mpeg2", "*.ogm"
+        ]
+        video_formats += " ".join(extensions) + ")"
+        
         files, _ = QFileDialog.getOpenFileNames(
             self,
             "Select Video Files",
             "",
-            "Video Files (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.webm);;All Files (*)"
+            video_formats
         )
         
         if files:
             for file in files:
                 if file not in self.input_files:
                     self.input_files.append(file)
-                    if (self.file_list.count() > 0 and 
-                        self.file_list.item(0) and 
-                        self.file_list.item(0).text().startswith("📁")):
-                        self.file_list.takeItem(0)
                     self.file_list.addItem(Path(file).name)
                     
             self.log_text.append(f"Added {len(files)} file(s)")
@@ -636,16 +665,7 @@ MP4, AVI, MOV, MKV, FLV, WMV, WEBM</p>
         self.update_file_list_placeholder()
     
     def update_file_list_placeholder(self):
-        if self.file_list.count() == 0:
-            placeholder_item = self.file_list.addItem("📁 Drag & drop video files here or click 'Add Files'")
-            item = self.file_list.item(0)
-            if item:
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
-        else:
-            if (self.file_list.count() > 0 and 
-                self.file_list.item(0) and 
-                self.file_list.item(0).text().startswith("📁")):
-                self.file_list.takeItem(0)
+        pass
         
     def clear_files(self):
         self.input_files.clear()
@@ -655,7 +675,7 @@ MP4, AVI, MOV, MKV, FLV, WMV, WEBM</p>
     
     def show_context_menu(self, position):
         item = self.file_list.itemAt(position)
-        if item is not None and not item.text().startswith("📁"):
+        if item is not None:
             context_menu = QMenu(self)
             delete_action = QAction("Delete", self)
             delete_action.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_TrashIcon))
@@ -666,10 +686,6 @@ MP4, AVI, MOV, MKV, FLV, WMV, WEBM</p>
     def delete_selected_file(self):
         current_row = self.file_list.currentRow()
         if current_row >= 0:
-            item = self.file_list.item(current_row)
-            if item and item.text().startswith("📁"):
-                return
-            
             item = self.file_list.takeItem(current_row)
             if current_row < len(self.input_files):
                 removed_file = self.input_files.pop(current_row)
